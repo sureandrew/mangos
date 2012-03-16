@@ -22048,7 +22048,7 @@ void Player::SummonIfPossible(bool agree)
     // stop taxi flight at summon
     if (IsTaxiFlying())
     {
-        GetMotionMaster()->MovementExpired();
+        GetMotionMaster()->MoveIdle();
         m_taxi.ClearTaxiDestinations();
     }
 
@@ -25329,4 +25329,17 @@ float Player::GetCollisionHeight(bool mounted)
 
         return modelData->CollisionHeight;
     }
+}
+
+void Player::InterruptTaxiFlying()
+{
+    // stop flight if need
+    if (IsTaxiFlying())
+    {
+        GetUnitStateMgr().InitDefaults();
+        m_taxi.ClearTaxiDestinations();
+    }
+    // save only in non-flight case
+    else
+        SaveRecallPosition();
 }
