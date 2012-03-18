@@ -25336,8 +25336,9 @@ void Player::InterruptTaxiFlying()
     // stop flight if need
     if (IsTaxiFlying())
     {
-        GetUnitStateMgr().InitDefaults();
+        GetUnitStateMgr().DropAction(UNIT_ACTION_TAXI);
         m_taxi.ClearTaxiDestinations();
+        GetUnitStateMgr().InitDefaults();
     }
     // save only in non-flight case
     else
