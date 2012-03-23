@@ -37,13 +37,18 @@ void EventProcessor::Update(uint32 p_time, bool force)
     // update time
     m_time += p_time;
 
-    // main event loop
-    EventList::iterator i;
-    while (((i = m_events.begin()) != m_events.end()) && i->first <= m_time)
+    for (EventList::iterator itr = m_events.begin(); itr != m_events.end(); ++itr)
     {
+        if (itr->first > m_time)
+            continue;
+
         // get and remove event from queue
-        BasicEvent* Event = i->second;
-        m_events.erase(i);
+        BasicEvent* Event = itr->second;
+        if (!Event)
+            continue;
+
+        // remove pointer - container be cleared in locked cycle
+        itr->second = NULL;
 
         if (!Event->to_Abort)
         {
@@ -63,26 +68,29 @@ void EventProcessor::Update(uint32 p_time, bool force)
 
 void EventProcessor::KillAllEvents(bool force)
 {
-    if (force)
-        RenewEvents();
-
     // prevent event insertions
     m_aborting = true;
 
+    if (force)
+        RenewEvents();
+
+    if (m_events.empty())
+        return;
+
     // first, abort all existing events
-    for (EventList::iterator i = m_events.begin(); i != m_events.end();)
+    for (EventList::iterator itr = m_events.begin(); itr != m_events.end(); ++itr)
     {
-        EventList::iterator i_old = i;
-        ++i;
+        BasicEvent* Event = itr->second;
+        if (!Event)
+            continue;
 
-        i_old->second->to_Abort = true;
-        i_old->second->Abort(m_time);
-        if (force || i_old->second->IsDeletable())
+        Event->to_Abort = true;
+        Event->Abort(m_time);
+        if (force || Event->IsDeletable())
         {
-            delete i_old->second;
-
-            if (!force)                                      // need per-element cleanup
-                m_events.erase (i_old);
+            // remove pointer - container be cleared in locked cycle
+            itr->second = NULL;
+            delete Event;
         }
     }
 
@@ -93,6 +101,13 @@ void EventProcessor::KillAllEvents(bool force)
 
 void EventProcessor::AddEvent(BasicEvent* Event, uint64 e_time, bool set_addtime)
 {
+    if (m_aborting)
+    {
+        if (Event)
+            delete Event;
+        return;
+    };
+
     if (set_addtime)
         Event->m_addTime = m_time;
 
@@ -102,9 +117,28 @@ void EventProcessor::AddEvent(BasicEvent* Event, uint64 e_time, bool set_addtime
 
 void EventProcessor::RenewEvents()
 {
+    if (!m_aborting && !m_events.empty())
+    {
+        for (EventList::iterator itr = m_events.begin(); itr != m_events.end();)
+        {
+            BasicEvent* Event = itr->second;
+            if (!Event)
+                m_events.erase(itr++);
+            else
+                ++itr;
+        }
+    }
+
     while (!m_queue.empty())
     {
-        m_events.insert(m_queue.front());
+        if (m_aborting)
+        {
+            BasicEvent* Event = m_queue.front().second;
+            if (Event)
+                delete Event;
+        }
+        else
+            m_events.insert(m_queue.front());
         m_queue.pop();
     }
 }
