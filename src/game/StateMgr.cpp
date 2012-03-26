@@ -104,6 +104,7 @@ public:
         data << uint32(0);
         target->SendMessageToSet(&data, true);
         target->m_movementInfo.RemoveMovementFlag(MOVEFLAG_ROOT);
+        target->AddEvent(new AttackResumeEvent(*target), ATTACK_DISPLAY_DELAY);
     }
 
 };
@@ -172,6 +173,7 @@ public:
 
         if(target->getVictim())
             target->SetTargetGuid(target->getVictim()->GetObjectGuid());
+        target->AddEvent(new AttackResumeEvent(*target), ATTACK_DISPLAY_DELAY);
     }
 };
 
@@ -295,7 +297,10 @@ void UnitStateMgr::Update(uint32 diff)
     }
 
     if (!state->Update(this, diff))
+    {
+        DEBUG_FILTER_LOG(LOG_FILTER_AI_AND_MOVEGENSS, "UnitStateMgr: %s finished action %s", GetOwnerStr().c_str(), state->TypeName());
         DropAction(state->priority);
+    }
 }
 
 void UnitStateMgr::DropAction(UnitActionId actionId)
@@ -417,7 +422,13 @@ ActionInfo* UnitStateMgr::CurrentState()
 void UnitStateMgr::DropAllStates()
 {
     for (int32 i = UNIT_ACTION_PRIORITY_IDLE; i != UNIT_ACTION_PRIORITY_END; ++i)
-        DropAction(UnitActionPriority(i));
+    {
+        if (ActionInfo* state = GetAction(UnitActionPriority(i)))
+        {
+            DEBUG_FILTER_LOG(LOG_FILTER_AI_AND_MOVEGENSS, "UnitStateMgr:DropAllStates %s drop action %s", GetOwnerStr().c_str(), state->TypeName());
+            DropAction(UnitActionPriority(i));
+        }
+    }
 }
 
 std::string const UnitStateMgr::GetOwnerStr() 
