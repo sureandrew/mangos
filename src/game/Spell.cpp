@@ -46,8 +46,6 @@
 #include "Vehicle.h"
 #include "Chat.h"
 
-#define SPELL_CHANNEL_UPDATE_INTERVAL (1 * IN_MILLISECONDS)
-
 extern pEffect SpellEffects[TOTAL_SPELL_EFFECTS];
 
 class PrioritizeManaUnitWraper
@@ -1813,6 +1811,9 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                 case 61916:                                 // Lightning Whirl (Stormcaller Brundir - Ulduar)
                     unMaxTargets = urand(2, 3);
                     break;
+                case 46771:                                 // Flame Sear (Grand Warlock Alythess - SWP)
+                    unMaxTargets = urand(3, 5);
+                    break;
                 case 63482:                                 // Lightning Whirl (h) (Stormcaller Brundir - Ulduar)
                     unMaxTargets = urand(3, 6);
                     break;
@@ -1823,6 +1824,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                     break;
                 case 30843:                                 // Enfeeble TODO: exclude top threat target from target selection
                 case 42005:                                 // Bloodboil
+                case 45641:                                 // Fire Bloom (Kil'jaeden - SWP)
                 case 55665:                                 // Life Drain (h)
                 case 58917:                                 // Consume Minions
                 case 64604:                                 // Nature Bomb Freya
